@@ -23,7 +23,9 @@ export const login = createAsyncThunk(
       const res = await axiosInstance.post("/user/sign-in", data);
       console.log("res", res);
       // Login only returns token, so fetch the actual user after
-      const userRes = await axiosInstance.get("/user/me");
+      const userRes = await axiosInstance.get("/user/me", {
+        withCredentials: true,
+      });
       connectSocket(userRes.data.user._id);
       toast.success("Logged in successfully");
       return userRes.data.user; // ✅ now returns the full user object
