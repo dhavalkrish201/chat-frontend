@@ -5,7 +5,7 @@ import { connectSocket, disconnectSocket } from "../../lib/socket";
 
 export const getUser = createAsyncThunk("user/me", async (_, thunkAPI) => {
   try {
-    const res = await axiosInstance.get("/user/me");
+    const res = await axiosInstance.get("/user/me", { withCredentials: true });
     connectSocket(res.data.user);
     return res.data.user;
   } catch (error) {
