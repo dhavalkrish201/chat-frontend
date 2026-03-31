@@ -1,8 +1,8 @@
-import { Image, Send, X } from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
+import { Image, Send, Smile, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
-import { getSocket } from "../lib/socket";
 import { sendMessage } from "../store/slices/chatSlice";
 
 const MessageInput = () => {
@@ -10,9 +10,29 @@ const MessageInput = () => {
   const [mediaPreview, setMediaPreview] = useState(null);
   const [media, setMedia] = useState(null);
   const [mediaType, setMediaType] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef(null);
+  const emojiPickerRef = useRef(null);
   const dispatch = useDispatch();
-  const { selectedUser } = useSelector((state) => state.chat);
+
+  // ✅ Close picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(e.target)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ✅ Append emoji to text
+  const handleEmojiClick = (emojiData) => {
+    setText((prev) => prev + emojiData.emoji);
+  };
 
   const handleMediaChange = (e) => {
     const file = e.target.files[0];
@@ -57,72 +77,85 @@ const MessageInput = () => {
 
     dispatch(sendMessage(data));
 
-    //Reset All
-
+    // Reset All
     setText("");
     setMedia(null);
     setMediaPreview(null);
     setMediaType("");
+    setShowEmojiPicker(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
-    const handleNewMessage = (newMessage) => {
-      console.log("newMessage", newMessage);
-      if (
-        newMessage.senderId === selectedUser._id ||
-        newMessage.receiverId === selectedUser._id
-      ) {
-        dispatch({ type: "chat/pushNewMessage", payload: newMessage });
-      }
-    };
-
-    socket.on("newMessage", handleNewMessage);
-    return () => {
-      socket.off("newMessage", handleNewMessage);
-    };
-  }, [selectedUser?._id, dispatch]);
-
   return (
-    <>
-      <div className="p-4 w-full">
-        {mediaPreview && (
-          <div className="mb-3 flex items-center gap-2">
-            <div className="relative">
-              {mediaType === "image" ? (
-                <img
-                  src={mediaPreview}
-                  alt="Preview"
-                  className="w-20 h-20 object-cover rounded-lg border border-gray-700"
-                />
-              ) : (
-                <video
-                  src={mediaPreview}
-                  controls
-                  className="w-32 h-20 object-cover rounded-lg border border-gray-700"
-                />
-              )}
-              <button
-                onClick={removeMedia}
-                type="button"
-                className="absolute top-2 right-2 w-5 h-5 bg-zinc-800 text-white rounded-full flex items-center justify-center hover:bg-black"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
+    <div className="px-2 py-3 sm:px-4 w-full">
+      {/* Media Preview */}
+      {mediaPreview && (
+        <div className="mb-3 flex items-center gap-2">
+          <div className="relative">
+            {mediaType === "image" ? (
+              <img
+                src={mediaPreview}
+                alt="Preview"
+                className="w-20 h-20 object-cover rounded-lg border border-gray-700"
+              />
+            ) : (
+              <video
+                src={mediaPreview}
+                controls
+                className="w-32 h-20 object-cover rounded-lg border border-gray-700"
+              />
+            )}
+            <button
+              onClick={removeMedia}
+              type="button"
+              className="absolute top-2 right-2 w-5 h-5 bg-zinc-800 text-white rounded-full flex items-center justify-center hover:bg-black"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Emoji Picker — anchored above input */}
+      <div className="relative" ref={emojiPickerRef}>
+        {showEmojiPicker && (
+          <div className="absolute bottom-12 left-0 z-50 shadow-lg rounded-lg">
+            <EmojiPicker
+              onEmojiClick={handleEmojiClick}
+              skinTonesDisabled
+              searchDisabled={false}
+              height={380}
+              width={300}
+            />
           </div>
         )}
-        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-          <div className="flex-1 flex gap-2">
+
+        <form
+          onSubmit={handleSendMessage}
+          className="flex items-center gap-1 sm:gap-2"
+        >
+          {/* Input wrapper with icons inside */}
+          <div className="flex-1 min-w-0 flex items-center gap-1 px-2 sm:px-3 py-2 rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500">
+            {/* Emoji Button */}
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((prev) => !prev)}
+              className={`flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full transition shrink-0
+                ${showEmojiPicker ? "text-yellow-400" : "text-gray-400"} hover:text-yellow-400`}
+            >
+              <Smile size={16} />
+            </button>
+
+            {/* Text Input */}
             <input
               type="text"
               placeholder="Type a message..."
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+              className="flex-1 bg-transparent focus:outline-none text-sm sm:text-base min-w-0"
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
+
+            {/* Hidden File Input */}
             <input
               type="file"
               accept="image/*,video/*"
@@ -131,24 +164,28 @@ const MessageInput = () => {
               onChange={handleMediaChange}
             />
 
+            {/* Media Button */}
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className={`hidden sm:flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 hover:border-gray-100 transition ${mediaPreview ? "text-emerald-500" : "text-gray-400"}`}
+              className={`flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full transition shrink-0
+                ${mediaPreview ? "text-emerald-500" : "text-gray-400"} hover:text-emerald-400`}
             >
-              <Image size={20} />
+              <Image size={16} />
             </button>
           </div>
+
+          {/* Send Button */}
           <button
             type="submit"
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50"
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 shrink-0"
             disabled={!text.trim() && !media}
           >
-            <Send size={22} />
+            <Send size={18} />
           </button>
         </form>
       </div>
-    </>
+    </div>
   );
 };
 

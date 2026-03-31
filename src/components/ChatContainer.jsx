@@ -17,9 +17,38 @@ const ChatContainer = () => {
 
   const messageEndRef = useRef(null);
 
+  // ✅ 1. Fetch messages when selected user changes
   useEffect(() => {
+    if (!selectedUser?._id) return;
     dispatch(getMessages(selectedUser._id));
   }, [selectedUser._id, dispatch]);
+
+  // ✅ 2. Listen for real-time incoming messages
+  useEffect(() => {
+    if (!selectedUser?._id) return;
+
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handleNewMessage = (newMessage) => {
+      const isRelevant =
+        (newMessage.senderId === selectedUser._id &&
+          newMessage.receiverId === authUser._id) ||
+        (newMessage.senderId === authUser._id &&
+          newMessage.receiverId === selectedUser._id);
+
+      if (isRelevant) {
+        dispatch({ type: "chat/pushNewMessage", payload: newMessage });
+      }
+    };
+
+    socket.on("newMessage", handleNewMessage);
+
+    // ✅ Cleanup to avoid duplicate listeners on re-render
+    return () => {
+      socket.off("newMessage", handleNewMessage);
+    };
+  }, [selectedUser?._id, authUser._id, dispatch]);
 
   useEffect(() => {
     if (messageEndRef.current && messages) {
@@ -40,13 +69,6 @@ const ChatContainer = () => {
       hour12: false,
     });
   }
-
-  useEffect(() => {
-    if (!selectedUser?._id) return;
-    dispatch(getMessages(selectedUser._id));
-    const socket = getSocket();
-    if (!socket) return;
-  }, [selectedUser?._id, dispatch]);
 
   if (isMessagesLoading) {
     return (
