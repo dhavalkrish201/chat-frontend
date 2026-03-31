@@ -24,7 +24,7 @@ const Profile = () => {
     reader.onload = () => {
       const base64Image = reader.result;
       setSelectedImage(base64Image);
-      setFormData({ ...formData, avatar: base64Image });
+      setFormData({ ...formData, avatar: file });
     };
   };
 
@@ -50,7 +50,9 @@ const Profile = () => {
               <div className="relative">
                 <img
                   src={
-                    selectedImage || formData.avatar || "/avatar-holder.avif"
+                    selectedImage ||
+                    formData.avatar.url ||
+                    "/avatar-holder.avif"
                   }
                   alt="/avatar-holder.avif"
                   className="w-32 h-32 rounded-full object-cover object-top border-4 border-gray-200"
