@@ -67,7 +67,7 @@ export const updateProfile = createAsyncThunk(
     try {
       const res = await axiosInstance.put("/user/update-profile", data);
       toast.success("Profile Updated Successfully");
-      return res.data;
+      return res.data; // ✅ res.data = { success, message, user }
     } catch (error) {
       toast.error(error.response.data.message);
       return thunkAPI.rejectWithValue(error.response.data.message);
@@ -132,7 +132,7 @@ const authSlice = createSlice({
         state.isUpdatingProfile = true;
       })
       .addCase(updateProfile.fulfilled, (state, action) => {
-        state.authUser = action.payload;
+        state.authUser = action.payload.user;
         state.isUpdatingProfile = false;
       })
       .addCase(updateProfile.rejected, (state) => {
