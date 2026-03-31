@@ -1,12 +1,10 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 import { axiosInstance } from "../../lib/axios";
-import { connectSocket, disconnectSocket } from "../../lib/socket";
 
 export const getUser = createAsyncThunk("user/me", async (_, thunkAPI) => {
   try {
     const res = await axiosInstance.get("/user/me", { withCredentials: true });
-    connectSocket(res.data.user);
     return res.data.user;
   } catch (error) {
     console.log("Error fetching user", error);
@@ -26,7 +24,6 @@ export const login = createAsyncThunk(
       const userRes = await axiosInstance.get("/user/me", {
         withCredentials: true,
       });
-      connectSocket(userRes.data.user._id);
       toast.success("Logged in successfully");
       return userRes.data.user; // ✅ now returns the full user object
     } catch (error) {
@@ -42,7 +39,7 @@ export const signup = createAsyncThunk(
     try {
       const res = await axiosInstance.post("/user/sign-up", data);
 
-      connectSocket(res.data);
+      // connectSocket(res.data);
       toast.success("Account Created successfully");
       return res.data;
     } catch (error) {
@@ -55,7 +52,8 @@ export const signup = createAsyncThunk(
 export const logout = createAsyncThunk("user/sign-out", async (_, thunkAPI) => {
   try {
     await axiosInstance.get("/user/sign-out");
-    disconnectSocket();
+    // disconnectSocket();
+    toast.success("Logged out successfully");
     return null;
   } catch (error) {
     toast.error(error.response.data.message);
