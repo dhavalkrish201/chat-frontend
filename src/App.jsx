@@ -14,6 +14,7 @@ import Navbar from "./components/Navbar";
 import { connectSocket, disconnectSocket } from "./lib/socket";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import Register from "./pages/Register";
 import { getUser, setOnlineUsers } from "./store/slices/authSlice";
@@ -66,6 +67,7 @@ const App = () => {
             path="/profile"
             element={authUser ? <Profile /> : <Navigate to={"/login"} />}
           />
+          <Route path="*" element={<NotFound />} />
         </Routes>
         <ToastContainer />
       </Router>
